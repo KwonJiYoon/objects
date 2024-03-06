@@ -1,4 +1,4 @@
-package org.study.theater.section01;
+package org.study.theater.section01.step01;
 
 import java.util.ArrayList;
 import java.util.Arrays;
