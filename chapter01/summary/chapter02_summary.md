@@ -95,4 +95,104 @@ _목요일 7회차 18:00 ~ 20:00 아바타 2인을 예매한다고 가정.<br>
 
 ---
 
+### 02. 객체지향 프로그래밍 향해 <br>
+>**_협력, 객체, 클래스_**<br>
 
+객체 지향은 객체를 지향하는 것.<br>
+
+가장 먼저 어떤 클래스가 필요한지 고민하고 결정한 후 클래스에 어떤 메서드와 속성이 필요한지 고민 <br>
+-> 객체 지향의 본질과는 거리가 멀다.<br>
+
+클래스가 아닌 객체에 초점을 맞춰야 진정한 객체지향 패러다임으로의 전환이 가능하다.<br>
+1. 어떤 클래스가 필요한지 고민하기 전에 어떤 객체들이 필요한지 고민해야한다.<br><br>
+클래스는 공통적인 상태와 행동을 공유하는 객체들을 추상화한 것이기 때문에,<br>
+클래스의 윤곽을 잡기 위해서 어떤 객체들이 어떤 상태와 행동을 가지는지 먼저 결정해야한다.<br><br>
+객체를 중심에 두는 접근 방법은 설계를 단순하고 깔끔하게 만들 수 있다.<br>
+
+
+2. 객체를 독립적인 존재가 아닌 기능을 구현하기 위해 협력하는 공동체의 일원으로 봐야한다.<br>
+객체는 홀로 존재하는 것이 아닌 다른 객체에게 도움을 주거나 의존하며 살아가는 협력적인 존재이다.<br>
+객체를 협력하는 공동체의 일원으로 바라보는 것은 설계를 유연하고 확장 가능하게 만든다. <br>
+객체의 모양과 윤곽이 잡힌 후 공통된 특성과 상태를 가진 객체들을 타입으로 분류하고<br>
+이 타입을 기반으로 클래스를 구현하면 된다.<br><br><br>
+
+
+>**_도메인의 구조를 따르는 프로그램 구조_**<br>
+
+* **소프트웨어**
+    * 사용자가 원하는 어떤 문제를 해결하기 위함이 목적
+    * 영화 예매 시스템의 목적 :: 영화를 좀 더 쉽고 빠르게 예매하려는 사용자의 문제 해결
+<br><br>
+* **도메인(domain)**
+    * 문제 해결을 위해 사용자가 프로그램을 사용하는 분야
+    * 객체지향 패러다임에서는 요구사항과 프로그램을 객체라는 동일한 관점에서 바라보기 때문에<br>
+  도메인을 구성하는 개념들이 프로그램의 객체와 클래스로 매끄럽게 연결된다.<br>
+<br>
+
+일반적으로 클래스의 이름은 대응되는 도메인의 개념의 이름과 동일하거나 유사하게 지어야한다.<br>
+클래스 사이의 관계도 프로그램의 구조를 이해하고 예상하기 쉽게 만들어야한다.<br>
+➱ 영화(Movie), 상영(org.study.movie.Screening), 할인 정책(DiscountPolicy), 금액 할인 정책(AmountDiscountPolicy), 비율 할인 정책(PercentDiscountPolicy), 할인 조건(discountCondition),<br> 순번 조건(SequenceCondition), 기간 조건(PeriodCondition)
+<br><br><br>
+
+
+>**_클래스 구현하기_**<br>
+```java
+public class Screening {
+    private Movie movie; // 상영할 영화
+    private int sequence; // 순번
+    private LocalDateTime whenScreened; // 상영 시작 시간
+
+    public Screening(Movie movie, int sequence, LocalDateTime whenScreened) {
+        this.movie = movie;
+        this.sequence = sequence;
+        this.whenScreened = whenScreened;
+    }
+
+    // 상영 시작 시간 반환
+    public LocalDateTime getStartTime() {
+        return whenScreened;
+    }
+
+    // 순번 일치 여부 검사
+    public boolean isSequence(int sequence) {
+        return this.sequence == sequence;
+    }
+
+    // 기본 요금 반환
+    public Money getMovieFee() {
+        return movie.getFee();
+    }
+}
+```
+
+위 코드에서 인스턴스 변수의 가시성은 private, 메서드의 가시성은 public이다. <br>
+클래스의 내/외부로 구분하는 이유는 경계의 명확성이 객체의 자율성을 보장하기 때문이다.
+<br><br>
+
+**_자율적인 객체_** <Br>
+
+1. 객체는 `상태(state)`와 `행동(behavior)`을 함께 가지는 복합적인 존재
+2. 객체가 스스로 판단하고 행동하는 `자율적인 존재`
+
+* 데이터와 기능을 객체 내부로 함께 묶는 것 :: `캡슐화`
+* 외부에서의 접근을 통제할 수 있는 것 :: `접근 제어 (access control)`
+    * 접근 제어를 위해 public, protected, private 등 `접근 수정자 (access modifier)` 사용
+    * **퍼블릭 인터페이스(public interface)** : 외부에서 접근 가능한 부분
+    * **구현(implementation)** : 오직 내부에서만 접근 가능한 부분
+* 객체지향 핵심 원칙 :: `인터페이스와 구현의 분리(separation of interface and implementation)`
+* 외부에 제공하는 메서드는 public, 서브클래스나 내부에서만 접근 간능해야하는 매서드는 protected, private
+* public으로 지정된 메서드만 퍼블릭 인터페이스에 포함, private/protected는 구현에 포함
+<br><br>
+
+**_프로그래머의 자유_** <Br>
+
+* **클래스 작성자 (class creator)** :  새로운 데이터 타입을 프로그램에 추가
+    * 클라이언트 프로그래머에세 필요한 부분만 공개하고 나머지는 숨김
+* **클라이언트 프로그래머 (client programmer)** : 클래스 작성자가 추가한 데이터 타입 사용
+    * 필요한 클래스들을 엮어서 애플리케이션을 빠르고 안정적으로 구축
+
+_클라이언트 프로그래머가 숨겨 놓은 부분에 마음대로 접근할 수 없도록 방지함으로써 클라이언트 프로그래머에 대한 영향을<br>
+걱정하지 않고 내부 구현을 마음대로 변경할 수 있다 :: `구현 은닉 (implementation hiding)`_
+<br><br>
+
+>**_협력하는 객체들의 공동체_**<br>
