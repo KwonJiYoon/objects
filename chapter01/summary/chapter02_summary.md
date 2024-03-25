@@ -196,3 +196,186 @@ _클라이언트 프로그래머가 숨겨 놓은 부분에 마음대로 접근�
 <br><br>
 
 >**_협력하는 객체들의 공동체_**<br>
+
+```java
+public class Screenning {
+    public Reservation reserve(Customer customer, int audienceCount){
+        return Reservation(customer, this, calculateFee(audienceCount), audienceCount);
+    }
+
+    private Money calculateFee(int audienceCount) {
+        return movie.calculateMovieFee(this).times(audienceCount);
+    }
+}
+```
+
+```java
+public class Money {
+    public static final Money ZERO = Money.wons(0);
+
+    private final BigDecimal amount;
+
+    public  static Money wons(long amount) {
+        return new Money(BigDecimal.valueOf(amount));
+    }
+
+    public static Money wons(double amount) {
+        return new Money(BigDecimal.valueOf(amount));
+    }
+
+    Money(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    public Money plus(Money amount) {
+        return new Money(this.amount.add(amount.amount));
+    }
+
+    public Money minus(Money amount) {
+        return new Money(this.amount.subtract(amount.amount));
+    }
+
+    public Money times(double percent) {
+        return new Money(this.amount.multiply(BigDecimal.valueOf(percent)));
+    }
+
+    public boolean isLessThan(Money other) {
+        return amount.compareTo(other.amount) < 0;
+    }
+
+    public boolean isGreaterThanOrEqual(Money other) {
+        return amount.compareTo(other.amount) >= 0;
+    }
+}
+```
+
+* Long 타입은 변수의 크기, 연산자의 종류와 관련된 구현 관점의 제약은 표현할 수 있지만,<br>
+Money 타입처럼 저장하는 값이 금액과 관련되어 있다는 의미는 전달할 수 없다.
+* 객체를 이용해 도메인의 의미를 풍부하게 표현할 수 있고, 개념을 명시적으로 표현하는 것은<br>
+전체적인 설계의 명확성과 유연성을 높일 수 있다.
+
+```java
+public class Reservation {
+
+    private Customer customer; // 고객
+    private Screening screening; // 상영 정보
+
+    private Money fee; // 예매 요금
+
+    private int audience; // 인원 수
+
+    public Reservation(Customer customer, Screening screening, Money fee, int audience) {
+        this.customer = customer;
+        this.screening = screening;
+        this.fee = fee;
+        this.audience = audience;
+    }
+}
+```
+Screening, Movie, Reservation 인스턴스 들은 서로의 메서드를 호출하며 상호작용한다.<br>
+시스템의 어떤 기능을 구현하기 위해 객체들 사이에 이뤄지는 상호작용이 `협력(Collaboration)`이다.
+<br><br><br>
+
+>**_협력에 관한 짧은 이야기_**<br>
+
+* `요청(request)` : 다른 객체의 인터페이스에 공개된 행동을 수행하도록 요청
+* `응답(request)` : 요청을 받은 객체는 자율적인 방법에 따라 요청 처리 후 응답
+* `메시지 전송(send a message)` : 다른 객체와 상호작용 할 수 있는 유일한 방법 
+* `메시지 수신(receive a message)` : 다른 객체에게 요청이 도착
+* `메서드(method)` : 수신 된 메시지를 처리하기 위한 방법
+
+
+---
+
+### 03. 할인 요금 구하기 <br>
+>**_할인 요금 계산을 위한 협력 시작하기_**<br>
+```java
+public class Movie {
+    
+    private String title; // 제목
+    private Duration runningTime; // 상영시간
+    private Money fee; // 기본 요금
+    private DiscountPolicy discountPolicy; // 할인 정책
+
+    public Movie(String title, Duration runningTime, Money fee, DiscountPolicy discountPolicy) {
+        this.title = title;
+        this.runningTime = runningTime;
+        this.fee = fee;
+        this.discountPolicy = discountPolicy;
+    }
+
+    public Money getFee() {
+        return fee;
+    }
+    
+    public Money calculateMovieFee(Screening screening) {
+        return fee.minus(discountPolicy.calculateDiscountAmount(screening));
+    }
+}
+```
+discountPolicy에 메시지를 전송할 뿐 할인 정책을 판단하는 코드는 존재하지 ❌<br>
+➱ **상속(inheritance), 다형성, 추상화(abstraction)** 의 개념/원리가 숨겨져있음<br>
+<br>
+>**_할인 정책과 할인 조건_**<br>
+```java
+public class DiscountPolicy {
+    
+    private List<DiscountCondition> conditions = new ArrayList<>();
+    
+    public DiscountPolicy(DiscountCondition ...conditions) {
+        this.conditions = Arrays.asList(conditions);
+    }
+    
+    public Money calculateDiscountAmount(Screening screening) {
+        for (DiscountCondition each : conditions) {
+            // 할인 조건을 만족하는 경우 :: 추상 메서드인 getDiscountAmount 호출
+            if (each.isSatisfiedBy(screening)) {
+                return getDiscountAmount(screening);
+            }
+        }
+        // 만족하는 할인 조건이 없는 경우 :: 0으로 리턴
+        return Money.ZERO;
+    }
+    
+    // 실제 애플리케이션에서는 DiscountPolicy의 인스턴스 생성이 필요없기 때문에
+    // 추상 클래스(abstract class)로 구현
+    abstract protected Money getDiscountAmount(Screening screening);
+    
+}
+```
+할인 정책의 금액 할인 / 비율 할인 정책은 대부분의 코드가 유사하고, 할인 요금 계산 방식에만 차이가 있을 것이다.<br>
+중복 코드를 제거하기 위해 부모 클래스인 DiscountPolicy 안에 중복코드를 작성하고, 두 클래스에서 상속 받게 할 예정<br><br>
+
+전체적인 흐름은 DiscountPolicy에서 정의하지만, 실제 요금 계산을 하는 부분은 getDiscountAmount 추상 메서드 위임<br>
+DiscountPolicy를 상속받은 자식 클래스의 오버라이딩 메서드가 실행 될 것이다.<br><br>
+
+`TEMPLATE METHOD`패턴 :: 부모 클래스에 기본적인 알고리즘 흐름 구현, 자식 클래스에 처리로직 위임하는 디자인 패턴<br><br>
+
+```java
+public interface DiscountCondition {
+    boolean isSatisfiedBy(Screening screening);
+}
+```
+
+```java
+public class PeriodCondition implements DiscountCondition{
+    private DayOfWeek dayOfWeek;
+    private LocalTime startTime;
+    private LocalTime endTime;
+
+    public PeriodCondition(DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime) {
+        this.dayOfWeek = dayOfWeek;
+        this.startTime = startTime;
+        this.endTime = endTime;
+    }
+    
+    public boolean isSatisfiedBy(Screening screening) {
+        return screening.getStartTime().getDayOfWeek().equals(dayOfWeek) &&
+                startTime.compareTo(screening.getStartTime().toLocalTime()) <= 0 &&
+                endTime.compareTo(screening.getStartTime().toLocalTime()) >= 0;
+    }
+}
+```
+```java
+
+```
